@@ -1,0 +1,606 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Смак Карпат | Мобільне Меню</title>
+    <!-- Завантаження Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Налаштування шрифту Inter та кольорів -->
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'primary-green': '#38a169',
+                        'secondary-brown': '#7c4d39',
+                        'background-light': '#f7fdfa',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        /* Стилі для плавної прокрутки */
+        html {
+            scroll-behavior: smooth;
+        }
+        /* Стиль для імітації модального вікна замість alert() */
+        .modal {
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        .modal.active {
+            visibility: visible;
+            opacity: 1;
+        }
+        /* Стиль для вмісту модального вікна, щоб вміст прокручувався, а не вся сторінка */
+        .modal-content {
+            max-height: 90vh; /* Обмеження висоти для мобільного вигляду */
+            overflow-y: auto;
+            /* Анімація відкриття */
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { transform: translateY(50px) scale(0.9); opacity: 0; }
+            to { transform: translateY(0) scale(1); opacity: 1; }
+        }
+
+        /* Стиль для активної кнопки вигляду */
+        .layout-active {
+            box-shadow: 0 0 0 2px #38a169;
+            background-color: #38a169;
+            color: white !important; /* Важливо для іконки */
+        }
+    </style>
+</head>
+<body class="bg-background-light font-sans text-gray-800">
+
+    <!-- Заголовок та навігація (Шапка) -->
+    <header class="sticky top-0 z-10 bg-white shadow-lg">
+        <div class="max-w-xl mx-auto p-4 flex justify-between items-center">
+            <h1 class="text-2xl font-bold text-primary-green">Смак Карпат</h1>
+            
+            <!-- Навігація для десктопу -->
+            <nav id="main-nav" class="hidden sm:block">
+                <!-- Links will be generated here -->
+            </nav>
+            
+            <button onclick="toggleMobileMenu()" class="sm:hidden p-2 text-primary-green focus:outline-none rounded-lg hover:bg-gray-100 transition">
+                 <!-- Іконка меню (Гамбургер) -->
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                </svg>
+            </button>
+        </div>
+        <!-- Мобільне меню, що випадає -->
+        <div id="mobile-menu" class="hidden sm:hidden bg-white border-t border-gray-100 pb-2">
+            <!-- Links will be generated here -->
+        </div>
+    </header>
+
+    <main id="menu" class="max-w-xl mx-auto p-4 md:p-6">
+        
+        <div class="text-center mb-8">
+            <h2 class="text-3xl font-extrabold text-gray-900 mb-2">Наше Меню</h2>
+            <p class="text-gray-500">Справжня українська кухня з карпатською душею</p>
+        </div>
+
+        <!-- Панель керування: Пошук та Перемикач Вигляду -->
+        <div class="flex flex-col sm:flex-row items-center justify-between mb-8 space-y-4 sm:space-y-0 sm:space-x-4">
+            <!-- Пошук -->
+            <div class="w-full sm:w-2/3 relative">
+                <input 
+                    type="text" 
+                    id="searchInput"
+                    oninput="filterMenu(event.target.value)"
+                    placeholder="Пошук страв за назвою..."
+                    class="w-full p-3 pl-10 border border-gray-300 rounded-xl focus:border-primary-green focus:ring-2 focus:ring-primary-green/50 transition duration-200 shadow-md"
+                >
+                <svg class="absolute left-3 top-3.5 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+            
+            <!-- Перемикач Вигляду -->
+            <div class="flex-shrink-0 flex space-x-2 p-1 bg-white border border-gray-200 rounded-xl shadow-md">
+                <button id="listViewBtn" onclick="toggleLayout('list')" class="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition duration-150" title="Вигляд Списком">
+                    <!-- Іконка Списку -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                    </svg>
+                </button>
+                <button id="gridViewBtn" onclick="toggleLayout('grid')" class="p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition duration-150" title="Вигляд Сіткою">
+                    <!-- Іконка Сітки -->
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Контейнер, куди буде динамічно додаватися меню -->
+        <div id="menu-container">
+            <!-- Секції меню будуть згенеровані тут за допомогою JavaScript -->
+        </div>
+
+        <!-- Футер -->
+        <footer class="text-center py-6 border-t border-gray-200 mt-8">
+            <p class="text-sm text-gray-500">Дякуємо, що обрали Смак Карпат! Завжди раді вас бачити.</p>
+        </footer>
+    </main>
+
+    <!-- 1. Детальне Модальне Вікно (Головне меню страви) -->
+    <div id="dishDetailModal" class="modal fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center p-4 z-50">
+        <div class="modal-content bg-white w-full max-w-lg rounded-xl shadow-2xl transform transition-transform duration-300">
+            <!-- Кнопка закриття -->
+            <button onclick="closeDishDetailModal()" class="absolute top-3 right-3 text-white bg-red-500 rounded-full h-8 w-8 flex items-center justify-center shadow-lg hover:bg-red-600 transition z-10">
+                &times;
+            </button>
+
+            <!-- Контент вікна -->
+            <div id="dishDetailContent">
+                <!-- Контент заповнюється JS -->
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Імітація Модального Вікна для "Додати Фото" -->
+    <div id="messageBox" class="modal fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+        <div class="bg-white p-6 rounded-xl shadow-2xl max-w-sm w-full transform transition-transform duration-300 scale-95 active:scale-100">
+            <h4 class="text-xl font-bold mb-3 text-primary-green" id="messageTitle">Поділитися Фото</h4>
+            <p class="text-gray-700 mb-4" id="messageText">Функція завантаження фотографій поки що не підключена. Ви можете поділитися своїм фото страви <span class="font-semibold" id="itemNamePlaceholder"></span>, надіславши його нам на пошту!</p>
+            <button onclick="closeMessageBox()" class="w-full bg-primary-green text-white font-semibold py-2 rounded-lg hover:bg-primary-green/90 transition duration-200 shadow-md">
+                Зрозуміло
+            </button>
+        </div>
+    </div>
+
+    <!-- JavaScript для даних та функціональності -->
+    <script>
+        // 1. ГОЛОВНА СТРУКТУРА ДАНИХ ДЛЯ МЕНЮ
+        const menuItems = [
+            // --- СУПИ ---
+            {
+                section: 'soups',
+                name: 'Борщ Український',
+                description: 'Насичений борщ на м\'ясному бульйоні зі свіжими овочами. Подається зі сметаною та двома теплими пампушками з часниковим соусом.',
+                price: 130,
+                placeholderText: 'Борщ',
+                imageColor: 'a83232',
+                ingredients: ['Буряк', 'Капуста', 'Картопля', 'М\'ясо (свинина)', 'Сметана', 'Пампушки'],
+            },
+            {
+                section: 'soups',
+                name: 'Грибна Юшка',
+                description: 'Ароматний карпатський суп з білими грибами (боровиками) та свіжою зеленню, заправлений вершками.',
+                price: 145,
+                placeholderText: 'Юшка',
+                imageColor: '8d6c34',
+                ingredients: ['Білі гриби', 'Картопля', 'Морква', 'Вершки (20%)', 'Спеції'],
+            },
+
+            // --- ЗАКУСКИ ---
+            {
+                section: 'appetizers',
+                name: 'Деруни з грибною підливою',
+                description: 'Хрусткі традиційні картопляні оладки, золотисті та ситні, подаються з насиченою вершково-грибною підливою.',
+                price: 120,
+                placeholderText: 'Деруни',
+                imageColor: 'e9d8a6',
+                ingredients: ['Картопля', 'Яйця', 'Борошно', 'Цибуля', 'Грибна підлива (вершки, шампіньйони)'],
+            },
+            {
+                section: 'appetizers',
+                name: 'Асорті українських сирів',
+                description: 'Вишуканий вибір кращих крафтових сирів з місцевих ферм: бринза, будз та пікантна вурда. Подається з медом.',
+                price: 180,
+                placeholderText: 'Сири',
+                imageColor: 'a9e6ff',
+                ingredients: ['Бринза (овеча)', 'Будз (коров\'ячий)', 'Вурда', 'Мед', 'Горіхи'],
+            },
+            
+            // --- САЛАТИ ---
+            {
+                section: 'salads',
+                name: 'Салат "Літній"',
+                description: 'Свіжий та легкий салат з сезонних овочів: огірків, помідорів, редиски та великої кількості зелені. Заправка на вибір: олія або сметана.',
+                price: 90,
+                placeholderText: 'Салат',
+                imageColor: '7ee08d',
+                ingredients: ['Помідори', 'Огірки', 'Редиска', 'Кріп', 'Петрушка', 'Олія / Сметана'],
+            },
+            {
+                section: 'salads',
+                name: 'Вінегрет',
+                description: 'Класичний овочевий салат з буряка, квасолі, картоплі, моркви та квашеної капусти, заправлений соняшниковою олією.',
+                price: 85,
+                placeholderText: 'Вінегрет',
+                imageColor: 'c277a8',
+                ingredients: ['Буряк', 'Картопля', 'Морква', 'Квасоля', 'Квашена капуста', 'Цибуля', 'Олія'],
+            },
+
+            // --- ОСНОВНІ СТРАВИ ---
+            {
+                section: 'main_dishes',
+                name: 'Банош з бринзою та шкварками',
+                description: 'Справжній гуцульський банош: кукурудзяна каша, зварена виключно на вершках, подається з м\'якою розсипчастою бринзою та хрусткими шкварками.',
+                price: 190,
+                placeholderText: 'Банош',
+                imageColor: '8d8d8d',
+                ingredients: ['Кукурудзяна крупа', 'Вершки', 'Бринза', 'Шкварки (сало)'],
+            },
+            {
+                section: 'main_dishes',
+                name: 'Котлета по-київськи',
+                description: 'Фірмова котлета по-київськи: ніжна куряча грудка, фарширована вершковим маслом із зеленню та обсмажена у хрусткій паніровці.',
+                price: 240,
+                placeholderText: 'Котлета',
+                imageColor: 'b8d8d8',
+                ingredients: ['Куряче філе', 'Вершкове масло', 'Зелень', 'Паніровка', 'Олія для смаження'],
+            },
+            {
+                section: 'main_dishes',
+                name: 'Вареники з картоплею та грибами',
+                description: 'Домашні вареники ручної ліпки з начинкою з картопляного пюре та лісових грибів. Подаються зі смаженою цибулею та сметаною.',
+                price: 155,
+                placeholderText: 'Вареники',
+                imageColor: 'f5e27a',
+                ingredients: ['Пшеничне борошно', 'Картопля', 'Лісові гриби', 'Цибуля', 'Сметана'],
+            },
+            {
+                section: 'main_dishes',
+                name: 'Шашлик зі свинини (300г)',
+                description: 'Соковитий маринований шашлик із добірної свинини, приготований на мангалі. Подається з маринованою цибулею та томатним соусом.',
+                price: 295,
+                placeholderText: 'Шашлик',
+                imageColor: '6e1e1e',
+                ingredients: ['Свиняча шия', 'Спеції', 'Цибуля', 'Томатний соус'],
+            },
+
+
+            // --- ДЕСЕРТИ ---
+            {
+                section: 'desserts',
+                name: 'Львівський сирник',
+                description: 'Класичний десерт Галичини. Надзвичайно ніжний запечений сирник, покритий густою шоколадною глазур\'ю.',
+                price: 95,
+                placeholderText: 'Сирник',
+                imageColor: 'f0d0e0',
+                ingredients: ['Домашній сир', 'Яйця', 'Цукор', 'Шоколадна глазур', 'Родзинки'],
+            },
+            {
+                section: 'desserts',
+                name: 'Медівник "Карпатський"',
+                description: 'Багатошаровий торт з тонких медових коржів, просочених ніжним сметанним кремом.',
+                price: 110,
+                placeholderText: 'Медівник',
+                imageColor: 'ffc300',
+                ingredients: ['Мед', 'Борошно', 'Сметанний крем', 'Цукор'],
+            },
+
+            // --- НАПОЇ ---
+            {
+                section: 'drinks',
+                name: 'Компот з сухофруктів (1л)',
+                description: 'Традиційний домашній напій, зварений з яблук, груш та слив. Освіжаючий та корисний.',
+                price: 60,
+                placeholderText: 'Компот',
+                imageColor: 'c0f2a9',
+                ingredients: ['Сушені яблука', 'Сушені груші', 'Чорнослив', 'Вода', 'Цукор'],
+            },
+            {
+                section: 'drinks',
+                name: 'Кава Еспресо',
+                description: 'Міцна ароматна кава 100% арабіка для бадьорості. Подається зі склянкою води.',
+                price: 45,
+                placeholderText: 'Кава',
+                imageColor: '4c2a1a',
+                ingredients: ['Кава 100% Арабіка', 'Вода'],
+            },
+        ];
+
+        // 2. КАРТА ДЛЯ ЗІСТАВЛЕННЯ КЛЮЧІВ ІЗ ЗАГОЛОВКАМИ
+        const sectionMap = {
+            soups: { title: 'Супи', id: 'soups' },
+            appetizers: { title: 'Закуски', id: 'appetizers' },
+            salads: { title: 'Салати', id: 'salads' },
+            main_dishes: { title: 'Основні Страви', id: 'main_dishes' },
+            desserts: { title: 'Десерти', id: 'desserts' },
+            drinks: { title: 'Напої', id: 'drinks' },
+        };
+
+        // Стан для керування виглядом
+        let currentLayout = 'list'; // 'list' або 'grid'
+        
+        // 3. ФУНКЦІЯ РЕНДЕРИНГУ МЕНЮ
+        function renderMenu(itemsToRender = menuItems) {
+            const container = document.getElementById('menu-container');
+            const mainNav = document.getElementById('main-nav');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            // Групуємо елементи меню за секціями, але тільки ті, що пройшли фільтр
+            const groupedItems = itemsToRender.reduce((acc, item) => {
+                const sectionKey = item.section;
+                if (!acc[sectionKey]) {
+                    acc[sectionKey] = [];
+                }
+                acc[sectionKey].push(item);
+                return acc;
+            }, {});
+
+            container.innerHTML = '';
+            
+            // Оновлюємо навігацію тільки якщо немає активного пошуку
+            const searchTerm = document.getElementById('searchInput').value.trim();
+            if (searchTerm === '') {
+                mainNav.innerHTML = '';
+                mobileMenu.innerHTML = '';
+            }
+
+            let hasResults = false;
+
+            // Ітеруємо по згрупованих секціях
+            for (const key in sectionMap) {
+                const items = groupedItems[key];
+                if (items && items.length > 0) {
+                    hasResults = true;
+                    const sectionInfo = sectionMap[key];
+                    
+                    // Визначаємо клас для контейнера: список або адаптивна сітка (1 колонка на мобільному, 2 на більшому)
+                    const containerClass = currentLayout === 'list' 
+                        ? 'flex flex-col space-y-4' // Список: вертикальний стек
+                        : 'grid grid-cols-1 sm:grid-cols-2 gap-4'; // Сітка: 1 колонка (мобільний), 2 колонки (планшет/десктоп)
+
+                    // Створення HTML секції
+                    const sectionHtml = `
+                        <section class="mb-10" id="${sectionInfo.id}">
+                            <h3 class="text-2xl font-bold border-b-2 border-primary-green pb-2 mb-6 text-primary-green">${sectionInfo.title}</h3>
+                            <div class="${containerClass}">
+                                ${items.map(item => createMenuItemHtml(item, currentLayout)).join('')}
+                            </div>
+                        </section>
+                    `;
+                    container.insertAdjacentHTML('beforeend', sectionHtml);
+
+                    // Створення посилань для навігації (тільки якщо не пошук)
+                    if (searchTerm === '') {
+                        const linkHtml = `<a href="#${sectionInfo.id}" class="text-sm font-medium text-secondary-brown hover:text-primary-green transition duration-200 ml-4">${sectionInfo.title}</a>`;
+                        mainNav.insertAdjacentHTML('beforeend', linkHtml);
+                        mobileMenu.insertAdjacentHTML('beforeend', `<a href="#${sectionInfo.id}" onclick="closeMobileMenu()" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition duration-200">${sectionInfo.title}</a>`);
+                    }
+                }
+            }
+
+            if (!hasResults) {
+                container.innerHTML = `<p class="text-center text-xl text-gray-500 py-12">На жаль, за вашим запитом страв не знайдено.</p>`;
+            }
+            
+            // Оновлення активного стану кнопок вигляду
+            updateLayoutButtons();
+        }
+
+        // 4. ФУНКЦІЯ СТВОРЕННЯ HTML ДЛЯ ОДНОГО ПУНКТУ МЕНЮ
+        function createMenuItemHtml(item, layout) {
+            // Використовуємо більший розмір зображення для кращої якості на великих екранах
+            const imageUrl = `https://placehold.co/600x400/${item.imageColor}/ffffff?text=${item.placeholderText}`;
+
+            if (layout === 'list') {
+                // Вигляд Списком: Горизонтальний макет (на мобільному він стане вертикальним стеком)
+                return `
+                    <div 
+                        class="menu-item bg-white p-4 rounded-xl shadow-lg flex flex-col sm:flex-row items-start cursor-pointer transition duration-300 hover:shadow-xl hover:bg-gray-50" 
+                        onclick="openDishDetailModal('${item.name}')"
+                    >
+                        <div class="w-full sm:w-32 sm:h-24 h-48 bg-gray-200 rounded-lg overflow-hidden flex-shrink-0 mb-4 sm:mb-0 sm:mr-4 relative">
+                            <img 
+                                src="${imageUrl}" 
+                                alt="${item.name}" 
+                                class="w-full h-full object-cover" 
+                                onerror="this.onerror=null;this.src='${imageUrl}';"
+                            >
+                            <!-- Кнопка "Додати Фото" -->
+                            <button 
+                                onclick="event.stopPropagation(); promptForPhoto('${item.name}')" 
+                                class="absolute top-1 right-1 bg-white/70 text-gray-700 text-xs font-semibold px-2 py-1 rounded-full shadow-md hover:bg-white transition duration-200"
+                            >
+                                + Фото
+                            </button>
+                        </div>
+                        <div class="flex-grow">
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="text-lg font-semibold text-gray-900">${item.name}</span>
+                                <span class="text-xl font-bold text-secondary-brown ml-4">${item.price} грн</span>
+                            </div>
+                            <p class="text-sm text-gray-500 line-clamp-2">${item.description}</p>
+                        </div>
+                    </div>
+                `;
+            } else if (layout === 'grid') {
+                // Вигляд Сіткою: Вертикальний, компактний макет
+                return `
+                    <div 
+                        class="menu-item bg-white rounded-xl shadow-lg cursor-pointer transition duration-300 hover:shadow-xl hover:bg-gray-50 flex flex-col overflow-hidden" 
+                        onclick="openDishDetailModal('${item.name}')"
+                    >
+                        <div class="w-full h-40 bg-gray-200 overflow-hidden relative">
+                            <img 
+                                src="${imageUrl}" 
+                                alt="${item.name}" 
+                                class="w-full h-full object-cover" 
+                                onerror="this.onerror=null;this.src='${imageUrl}';"
+                            >
+                            <!-- Кнопка "Додати Фото" -->
+                            <button 
+                                onclick="event.stopPropagation(); promptForPhoto('${item.name}')" 
+                                class="absolute top-2 right-2 bg-white/70 text-gray-700 text-xs font-semibold px-2 py-1 rounded-full shadow-md hover:bg-white transition duration-200"
+                            >
+                                + Фото
+                            </button>
+                        </div>
+                        <div class="p-4 flex-grow flex flex-col justify-between">
+                            <div>
+                                <h4 class="text-lg font-semibold text-gray-900 mb-1">${item.name}</h4>
+                                <p class="text-xs text-gray-500 line-clamp-2">${item.description}</p>
+                            </div>
+                            <div class="mt-3 text-right">
+                                <span class="text-xl font-bold text-secondary-brown">${item.price} грн</span>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // 5. ФУНКЦІЇ ДЛЯ ПОШУКУ ТА ВИГЛЯДУ
+
+        function filterMenu(searchTerm) {
+            const term = searchTerm.toLowerCase().trim();
+            let filteredItems;
+
+            if (term === '') {
+                // Якщо пошуковий рядок порожній, показуємо все меню
+                filteredItems = menuItems;
+            } else {
+                // Фільтруємо за назвою
+                filteredItems = menuItems.filter(item => 
+                    item.name.toLowerCase().includes(term)
+                );
+            }
+            
+            // Перерендеримо меню з відфільтрованими елементами
+            renderMenu(filteredItems);
+        }
+
+        function toggleLayout(layout) {
+            currentLayout = layout;
+            // Перерендеримо меню з поточним фільтром (якщо він є)
+            const searchTerm = document.getElementById('searchInput').value;
+            filterMenu(searchTerm);
+        }
+
+        function updateLayoutButtons() {
+            const listBtn = document.getElementById('listViewBtn');
+            const gridBtn = document.getElementById('gridViewBtn');
+
+            listBtn.classList.remove('layout-active', 'text-gray-600');
+            gridBtn.classList.remove('layout-active', 'text-gray-600');
+
+            if (currentLayout === 'list') {
+                listBtn.classList.add('layout-active');
+                gridBtn.classList.add('text-gray-600');
+            } else {
+                gridBtn.classList.add('layout-active');
+                listBtn.classList.add('text-gray-600');
+            }
+        }
+
+        // 6. ФУНКЦІЇ ДЛЯ МОДАЛЬНОГО ВІКНА ДЕТАЛЕЙ СТРАВИ
+        function openDishDetailModal(dishName) {
+            const dishDetailModal = document.getElementById('dishDetailModal');
+            const dishDetailContent = document.getElementById('dishDetailContent');
+            
+            // Знаходимо об'єкт страви за назвою
+            const item = menuItems.find(i => i.name === dishName);
+
+            if (!item) {
+                console.error('Страва не знайдена:', dishName);
+                return;
+            }
+
+            const imageUrl = `https://placehold.co/600x400/${item.imageColor}/ffffff?text=${item.placeholderText}`;
+            
+            // Генеруємо HTML для списку інгредієнтів
+            const ingredientsListHtml = item.ingredients.map(ing => 
+                `<li class="text-gray-600 mb-1 flex items-center">
+                    <span class="text-primary-green mr-2 text-xl">&bull;</span> ${ing}
+                </li>`
+            ).join('');
+
+            // Створюємо повний контент для модального вікна
+            dishDetailContent.innerHTML = `
+                <div class="relative">
+                    <img 
+                        src="${imageUrl}" 
+                        alt="${item.name}" 
+                        class="w-full h-64 object-cover rounded-t-xl" 
+                        onerror="this.onerror=null;this.src='${imageUrl}';"
+                    >
+                    <!-- Кнопка "Надіслати фото" всередині детального модального вікна -->
+                    <button 
+                        onclick="closeDishDetailModal(); promptForPhoto('${item.name}')" 
+                        class="absolute bottom-4 right-4 bg-white/90 text-gray-800 text-sm font-semibold px-4 py-2 rounded-full shadow-xl hover:bg-white transition duration-200 flex items-center"
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.218A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.218A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                        Надіслати своє фото
+                    </button>
+                </div>
+                
+                <div class="p-6">
+                    <div class="flex justify-between items-start mb-4 border-b pb-3">
+                        <h2 class="text-3xl font-extrabold text-gray-900">${item.name}</h2>
+                        <span class="text-3xl font-bold text-secondary-brown ml-4">${item.price} грн</span>
+                    </div>
+
+                    <h3 class="text-xl font-semibold text-primary-green mb-2">Опис</h3>
+                    <p class="text-base text-gray-700 mb-6">${item.description}</p>
+
+                    <h3 class="text-xl font-semibold text-primary-green mb-2">Основні Інгредієнти</h3>
+                    <ul class="list-none p-0 ml-0 grid grid-cols-1 sm:grid-cols-2 gap-y-1 gap-x-4">
+                        ${ingredientsListHtml}
+                    </ul>
+                </div>
+            `;
+
+            // Показуємо модальне вікно
+            dishDetailModal.classList.add('active');
+        }
+
+        function closeDishDetailModal() {
+            const dishDetailModal = document.getElementById('dishDetailModal');
+            dishDetailModal.classList.remove('active');
+        }
+
+        // 7. ФУНКЦІЇ ДЛЯ ІМІТАЦІЇ ДОДАВАННЯ ФОТО
+        function promptForPhoto(itemName) {
+            const messageBox = document.getElementById('messageBox');
+            const itemNamePlaceholder = document.getElementById('itemNamePlaceholder');
+            
+            itemNamePlaceholder.textContent = itemName;
+            messageBox.classList.add('active');
+        }
+
+        function closeMessageBox() {
+            const messageBox = document.getElementById('messageBox');
+            messageBox.classList.remove('active');
+        }
+        
+        // 8. ФУНКЦІЇ ДЛЯ МОБІЛЬНОГО МЕНЮ
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenu.classList.toggle('hidden');
+        }
+
+        function closeMobileMenu() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenu.classList.add('hidden');
+        }
+
+        // Запускаємо рендеринг меню при завантаженні сторінки
+        window.onload = function() {
+            // Встановлюємо початковий вигляд кнопок
+            updateLayoutButtons(); 
+            // Рендеримо все меню
+            renderMenu();
+        };
+    </script>
+</body>
+</html>
